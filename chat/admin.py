@@ -15,10 +15,10 @@ admin.site.register(KeyPair, KeyPairAdmin)
 
 # show the message model in the admin panel and show all the fields in the message model
 class MessageAdmin(admin.ModelAdmin):
-    list_display = ['chat', 'sender', 'encrypted_key', 'nonce', 'tag', 'timestamp']
-    readonly_fields = ('encrypted_key', 'nonce', 'tag')  # Mark these fields as read-only if they are not user-editable
+    list_display = ['chat', 'sender','encrypted_aes_key', 'encrypted_audio_length', 'timestamp']
 
     list_filter = ['chat', 'sender', 'timestamp']
     search_fields = ['chat', 'sender']
+    readonly_fields = ('encrypted_audio_base64',)
 
 admin.site.register(Message, MessageAdmin)

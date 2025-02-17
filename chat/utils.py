@@ -4,6 +4,15 @@ import base64
 
 from Crypto.Cipher import AES, PKCS1_OAEP
 from Crypto.Random import get_random_bytes
+from base64 import b64encode, b64decode
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives import padding
+from cryptography.hazmat.primitives import hashes
+import os
+from Crypto.Util.Padding import unpad, pad
+
 
 def generate_key_pair():
     key = RSA.generate(2048)
@@ -11,48 +20,59 @@ def generate_key_pair():
     public_key = key.publickey().export_key().decode('utf-8')
     return private_key, public_key
 
+def encrypt_message(public_key_str, message):
+    public_key = RSA.import_key(public_key_str)
+    cipher = PKCS1_OAEP.new(public_key)
+    chunk_size = 190  # Max size depends on the key size and padding
+    chunks = [message[i:i + chunk_size] for i in range(0, len(message), chunk_size)]
+    
+    encrypted_chunks = [b64encode(cipher.encrypt(chunk.encode())) for chunk in chunks]
+    return '||'.join([chunk.decode('utf-8') for chunk in encrypted_chunks])
 
 
-def hybrid_encrypt_audio(audio_data, public_key_pem):
-    """
-    Encrypts audio data using AES and RSA (hybrid encryption).
-    :param audio_data: The audio data (bytes).
-    :param public_key_pem: The RSA public key in PEM format.
-    :return: Encrypted AES key and AES-encrypted audio data.
-    """
-    # Generate a random AES key
-    aes_key = get_random_bytes(32)  # 256-bit AES key
 
-    # Encrypt the audio data using AES
-    cipher_aes = AES.new(aes_key, AES.MODE_EAX)
-    ciphertext, tag = cipher_aes.encrypt_and_digest(audio_data)
+def decrypt_message(private_key_str, encrypted_message):
+    private_key = RSA.import_key(private_key_str)
+    cipher = PKCS1_OAEP.new(private_key)
+    
+    # Split the encrypted message into chunks
+    encrypted_chunks = encrypted_message.split('||')
+    decrypted_chunks = [cipher.decrypt(b64decode(chunk.encode())).decode('utf-8') for chunk in encrypted_chunks]
+    return ''.join(decrypted_chunks)
 
-    # Encrypt the AES key using RSA
+
+def encrypt_final_audio(audio, public_key_pem):
+    
+    audio_data = audio
+
     public_key = RSA.import_key(public_key_pem)
+    aes_key = os.urandom(32)  # Generate a random AES key (256 bits)
+    iv = get_random_bytes(AES.block_size)
+    
+    cipher_aes = AES.new(aes_key, AES.MODE_CBC, iv)
+    # encrypted_audio = cipher_aes.encrypt(pad(audio_data, AES.block_size))
+    encrypted_audio = cipher_aes.encrypt(audio_data.ljust(len(audio_data) + AES.block_size - len(audio_data) % AES.block_size, b'\0'))  # Padding
+
+
     cipher_rsa = PKCS1_OAEP.new(public_key)
     encrypted_aes_key = cipher_rsa.encrypt(aes_key)
 
-    return encrypted_aes_key, ciphertext, cipher_aes.nonce, tag
+    return encrypted_audio, encrypted_aes_key, iv
 
 
 
-def hybrid_decrypt_audio(encrypted_aes_key, ciphertext, nonce, tag, private_key_pem):
-    """
-    Decrypts audio data using AES and RSA (hybrid decryption).
-    :param encrypted_aes_key: The RSA-encrypted AES key.
-    :param ciphertext: The AES-encrypted audio data.
-    :param nonce: The AES nonce.
-    :param tag: The AES tag.
-    :param private_key_pem: The RSA private key in PEM format.
-    :return: Decrypted audio data (bytes).
-    """
-    # Decrypt the AES key using RSA
-    private_key = RSA.import_key(private_key_pem)
+
+def decrypt_final_audio(encrypted_audio,encrypted_aes_key,iv,private_key_pem):
+
+    private_key = RSA.import_key(private_key_pem)  # Import the key as an RSA object
+
     cipher_rsa = PKCS1_OAEP.new(private_key)
     aes_key = cipher_rsa.decrypt(encrypted_aes_key)
 
-    # Decrypt the audio data using AES
-    cipher_aes = AES.new(aes_key, AES.MODE_EAX, nonce=nonce)
-    audio_data = cipher_aes.decrypt_and_verify(ciphertext, tag)
+    cipher_aes = AES.new(aes_key, AES.MODE_CBC, iv)
+    decrypted_audio = cipher_aes.decrypt(encrypted_audio)
 
-    return audio_data
+    decrypted_audio = decrypted_audio.rstrip(b'\0')  # Remove padding
+    base64_audio = base64.b64encode(decrypted_audio).decode('utf-8')
+
+    return base64_audio
