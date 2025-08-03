@@ -32,26 +32,22 @@ ALLOWED_HOSTS = ["*"]
 # Application definition
 
 INSTALLED_APPS = [
-    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
+    'daphne',
     'django.contrib.staticfiles',
 
-
-
-     # Third-party apps
+    # Third-party apps
+    'channels',
     'rest_framework',
     'corsheaders',
 
     # Local apps
     'accounts',
     'chat',
-    
-    'channels',
-
 ]
 
 REST_FRAMEWORK = {
@@ -160,7 +156,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",  # Frontend origin
+    "http://localhost:5174",  # Frontend origin
+    
 ]
 
 
@@ -173,14 +170,17 @@ CORS_ALLOW_METHODS = [
     "OPTIONS",
 ]
 
-ASGI_APPLICATION = 'realtime_chat_project.asgi.application'  # Replace 'your_project_name' with your project folder name
-
-
+# Channel Layers Configuration
 CHANNEL_LAYERS = {
     "default": {
-        "BACKEND": "channels.layers.InMemoryChannelLayer",  # Use Redis in production
+        "BACKEND": "channels.layers.InMemoryChannelLayer"
     },
 }
 
-# Daphne
+# ASGI Configuration
 ASGI_APPLICATION = "realtime_chat_project.asgi.application"
+
+GROQ_API_KEY = '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'
+
+# ChatGPT API Configuration
+OPENAI_API_KEY = 'your-openai-api-key-here'  # Replace with your actual OpenAI API key
