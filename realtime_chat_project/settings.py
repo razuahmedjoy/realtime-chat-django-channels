@@ -180,7 +180,7 @@ CHANNEL_LAYERS = {
 # ASGI Configuration
 ASGI_APPLICATION = "realtime_chat_project.asgi.application"
 
-GROQ_API_KEY = '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'
+GROQ_API_KEY = 'test'
 
 # ChatGPT API Configuration
 OPENAI_API_KEY = 'your-openai-api-key-here'  # Replace with your actual OpenAI API key
