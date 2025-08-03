@@ -11,7 +11,6 @@ constantly==23.10.4
 cryptography==44.0.0
 daphne==4.1.2
 Django==5.1.4
-django-channels==0.7.0
 django-cors-headers==4.6.0
 django-redis==5.4.0
 djangorestframework==3.15.2
@@ -39,3 +38,4 @@ typing_extensions==4.12.2
 tzdata==2024.2
 urllib3==2.3.0
 zope.interface==7.2
+groq==0.4.2
